@@ -61,7 +61,7 @@ def is_unique(collection: list):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print(f'Usage: {sys.argv[0]} /path/to/file', file=sys.stderr)
+        print(f'Usage: {sys.argv[0]} /path/to/file [distroName]', file=sys.stderr)
         exit(1)
 
     with open(sys.argv[1]) as fd:
@@ -70,8 +70,15 @@ if __name__ == "__main__":
     distros = content['Distributions']
     assert is_unique([e.get('StoreAppId') for e in distros if e])
     assert is_unique([e.get('Name') for e in distros if e])
+    
+    specificDistro = ""
+
+    if len(sys.argv) > 2:
+        specificDistro = sys.argv[2]
+
 
     for e in content['Distributions']:
-        validate_distro(e)
+        if specificDistro == "" or specificDistro == e.get('Name'):
+            validate_distro(e)
 
     print("All checks completed successfully")
