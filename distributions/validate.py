@@ -71,14 +71,14 @@ if __name__ == "__main__":
     assert is_unique([e.get('StoreAppId') for e in distros if e])
     assert is_unique([e.get('Name') for e in distros if e])
     
-    specificDistro = ""
-
     if len(sys.argv) > 2:
-        specificDistro = sys.argv[2]
+        # Filter the distros to only the one we want to validate
+        content = { "Distributions": [e for e in content['Distributions'] if e['Name'] == sys.argv[2]] }
+        if not content['Distributions']: 
+                raise RuntimeError(f'No distro found for name {sys.argv[2]}')
 
 
     for e in content['Distributions']:
-        if specificDistro == "" or specificDistro == e.get('Name'):
-            validate_distro(e)
+        validate_distro(e)
 
     print("All checks completed successfully")
