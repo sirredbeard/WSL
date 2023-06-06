@@ -60,10 +60,14 @@ foreach ($a in Get-NetFirewallHyperVPort)
     Start-Process -FilePath "vfpctrl.exe" -ArgumentList $vfpctrlArg -RedirectStandardOutput $stdOutLog -RedirectStandardError $stdErrLog -NoNewWindow -wait
     Get-Content $stdOutLog, $stdErrLog | Out-File -FilePath $wslNetworkLog -Append
 
+    Write-Output -----------------------------------------------------------------------   | Out-File -FilePath $wslNetworkLog -Append
+
     $vfpctrlArg = "/port " + $a.PortName + " /list-rule"
     Write-Output "Querying vfpctrl.exe $vfpctrlArg"  | Out-File -FilePath $wslNetworkLog -Append
     Start-Process -FilePath "vfpctrl.exe" -ArgumentList $vfpctrlArg -RedirectStandardOutput $stdOutLog -RedirectStandardError $stdErrLog -NoNewWindow -wait
     Get-Content $stdOutLog, $stdErrLog | Out-File -FilePath $wslNetworkLog -Append
+
+    Write-Output -----------------------------------------------------------------------   | Out-File -FilePath $wslNetworkLog -Append
 }
 
 Write-Output "Querying vfpctrl.exe /list-vmswitch-port"  | Out-File -FilePath $wslNetworkLog -Append
