@@ -131,86 +131,56 @@ if ($Dump)
 }
 
 # Collect networking state relevant for WSL
-$wslNetworkLog = "$folder/wsl_network_snapshot.log"
 $stdOutLog = "$folder/wsl_network_stdout.log"
 $stdErrLog = "$folder/wsl_network_stderr.log"
 
+# Using a try/catch as some of the commands below do not exist on some OS versions
 try
 {
-    Write-Output "WSL Net Snapshot" | Out-File -FilePath $wslNetworkLog
+    Write-Output "Get-NetAdapter" | Out-File -FilePath "$folder/Get-NetAdapter.log" -Append
+    Get-NetAdapter -includeHidden | select Name,ifIndex,NetLuid,InterfaceGuid,Status,MacAddress,MtuSize,InterfaceType,Hidden,HardwareInterface,ConnectorPresent,MediaType,PhysicalMediaType | Out-File -FilePath "$folder/Get-NetAdapter.log" -Append
 
-    Write-Output -----------------------------------------------------------------------   | Out-File -FilePath $wslNetworkLog -Append
+    Write-Output "Get-NetFirewallHyperVVMCreator" | Out-File -FilePath "$folder/Get-NetFirewallHyperVVMCreator.log" -Append
+    Get-NetFirewallHyperVVMCreator | Out-File -FilePath "$folder/Get-NetFirewallHyperVVMCreator.log" -Append
 
-    Write-Output "Get-NetAdapter"  | Out-File -FilePath $wslNetworkLog -Append
-    Get-NetAdapter -includeHidden | select Name,ifIndex,NetLuid,InterfaceGuid,Status,MacAddress,MtuSize,InterfaceType,Hidden,HardwareInterface,ConnectorPresent,MediaType,PhysicalMediaType    | Out-File -FilePath $wslNetworkLog -Append
+    Write-Output "Get-NetFirewallHyperVVMSetting -PolicyStore ActiveStore" | Out-File -FilePath "$folder/Get-NetFirewallHyperVVMSetting.log" -Append
+    Get-NetFirewallHyperVVMSetting -PolicyStore ActiveStore | Out-File -FilePath "$folder/Get-NetFirewallHyperVVMSetting.log" -Append
 
-    Write-Output -----------------------------------------------------------------------   | Out-File -FilePath $wslNetworkLog -Append
+    Write-Output "Get-NetFirewallHyperVProfile -PolicyStore ActiveStore" | Out-File -FilePath "$folder/Get-NetFirewallHyperVProfile.log" -Append
+    Get-NetFirewallHyperVProfile -PolicyStore ActiveStore | Out-File -FilePath "$folder/Get-NetFirewallHyperVProfile.log" -Append
 
-    Write-Output "Get-NetFirewallHyperVVMCreator"  | Out-File -FilePath $wslNetworkLog -Append
-    Get-NetFirewallHyperVVMCreator  | Out-File -FilePath $wslNetworkLog -Append
+    Write-Output "Get-NetFirewallHyperVPort" | Out-File -FilePath "$folder/Get-NetFirewallHyperVPort.log" -Append
+    Get-NetFirewallHyperVPort | Out-File -FilePath "$folder/Get-NetFirewallHyperVPort.log" -Append
 
-    Write-Output -----------------------------------------------------------------------   | Out-File -FilePath $wslNetworkLog -Append
-
-    Write-Output "Get-NetFirewallHyperVVMSetting -PolicyStore ActiveStore"  | Out-File -FilePath $wslNetworkLog -Append
-    Get-NetFirewallHyperVVMSetting -PolicyStore ActiveStore  | Out-File -FilePath $wslNetworkLog -Append
-
-    Write-Output -----------------------------------------------------------------------   | Out-File -FilePath $wslNetworkLog -Append
-
-    Write-Output "Get-NetFirewallHyperVProfile -PolicyStore ActiveStore"  | Out-File -FilePath $wslNetworkLog -Append
-    Get-NetFirewallHyperVProfile -PolicyStore ActiveStore  | Out-File -FilePath $wslNetworkLog -Append
-
-    Write-Output -----------------------------------------------------------------------   | Out-File -FilePath $wslNetworkLog -Append
-
-    $hypervVports = Get-NetFirewallHyperVPort
-    if (!$hypervVports)
-    {
-        Write-Output "Get-NetFirewallHyperVPort returned no ports"  | Out-File -FilePath $wslNetworkLog -Append
-    }
-    else
-    {
-        Write-Output "Get-NetFirewallHyperVPort"  | Out-File -FilePath $wslNetworkLog -Append
-        Get-NetFirewallHyperVPort  | Out-File -FilePath $wslNetworkLog -Append
-    }
-
-    Write-Output -----------------------------------------------------------------------   | Out-File -FilePath $wslNetworkLog -Append
-
-    Write-Output "hnsdiag.exe list all" | Out-File -FilePath $wslNetworkLog -Append
+    Write-Output "hnsdiag.exe list all" | Out-File -FilePath "$folder/hnsdiag_list_all.log" -Append
     Start-Process -FilePath "hnsdiag.exe" -ArgumentList "list all" -RedirectStandardOutput $stdOutLog -RedirectStandardError $stdErrLog -NoNewWindow -wait
-    Get-Content $stdOutLog, $stdErrLog | Out-File -FilePath $wslNetworkLog -Append
+    Get-Content $stdOutLog, $stdErrLog | Out-File -FilePath "$folder/hnsdiag_list_all.log" -Append
 
-    Write-Output -----------------------------------------------------------------------   | Out-File -FilePath $wslNetworkLog -Append
-
-    Write-Output "hnsdiag.exe list endpoints -df" | Out-File -FilePath $wslNetworkLog -Append
+    Write-Output "hnsdiag.exe list endpoints -df" | Out-File -FilePath "$folder/hnsdiag_list_endpoints.log" -Append
     Start-Process -FilePath "hnsdiag.exe" -ArgumentList "list endpoints -df" -RedirectStandardOutput $stdOutLog -RedirectStandardError $stdErrLog -NoNewWindow -wait
-    Get-Content $stdOutLog, $stdErrLog | Out-File -FilePath $wslNetworkLog -Append
-
-    Write-Output -----------------------------------------------------------------------   | Out-File -FilePath $wslNetworkLog -Append
+    Get-Content $stdOutLog, $stdErrLog | Out-File -FilePath "$folder/hnsdiag_list_endpoints.log" -Append
 
     foreach ($a in Get-NetFirewallHyperVPort)
     {
-        $vfpctrlArg = "/port " + $a.PortName + " /get-port-state"
-        Write-Output "Querying vfpctrl.exe $vfpctrlArg"  | Out-File -FilePath $wslNetworkLog -Append
-        Start-Process -FilePath "vfpctrl.exe" -ArgumentList $vfpctrlArg -RedirectStandardOutput $stdOutLog -RedirectStandardError $stdErrLog -NoNewWindow -wait
-        Get-Content $stdOutLog, $stdErrLog | Out-File -FilePath $wslNetworkLog -Append
+        $vfpLogFile = "$folder/vfp-port-" + $a.PortName + ".log"
 
-        Write-Output -----------------------------------------------------------------------   | Out-File -FilePath $wslNetworkLog -Append
+        $vfpctrlArg = "/port " + $a.PortName + " /get-port-state"
+        Write-Output "Querying vfpctrl.exe $vfpctrlArg" | Out-File -FilePath $vfpLogFile -Append
+        Start-Process -FilePath "vfpctrl.exe" -ArgumentList $vfpctrlArg -RedirectStandardOutput $stdOutLog -RedirectStandardError $stdErrLog -NoNewWindow -wait
+        Get-Content $stdOutLog, $stdErrLog | Out-File -FilePath $vfpLogFile -Append
 
         $vfpctrlArg = "/port " + $a.PortName + " /list-rule"
-        Write-Output "Querying vfpctrl.exe $vfpctrlArg"  | Out-File -FilePath $wslNetworkLog -Append
+        Write-Output "Querying vfpctrl.exe $vfpctrlArg" | Out-File -FilePath $vfpLogFile -Append
         Start-Process -FilePath "vfpctrl.exe" -ArgumentList $vfpctrlArg -RedirectStandardOutput $stdOutLog -RedirectStandardError $stdErrLog -NoNewWindow -wait
-        Get-Content $stdOutLog, $stdErrLog | Out-File -FilePath $wslNetworkLog -Append
-
-        Write-Output -----------------------------------------------------------------------   | Out-File -FilePath $wslNetworkLog -Append
+        Get-Content $stdOutLog, $stdErrLog | Out-File -FilePath $vfpLogFile -Append
     }
 
-    Write-Output "Querying vfpctrl.exe /list-vmswitch-port"  | Out-File -FilePath $wslNetworkLog -Append
+    Write-Output "Querying vfpctrl.exe /list-vmswitch-port" | Out-File -FilePath "$folder/vfpctrl_list_vmswitch_port.log" -Append
     Start-Process -FilePath "vfpctrl.exe" -ArgumentList "/list-vmswitch-port" -RedirectStandardOutput $stdOutLog -RedirectStandardError $stdErrLog -NoNewWindow -wait
-    Get-Content $stdOutLog, $stdErrLog | Out-File -FilePath $wslNetworkLog -Append
+    Get-Content $stdOutLog, $stdErrLog | Out-File -FilePath "$folder/vfpctrl_list_vmswitch_port.log" -Append
 }
 catch
 {
-    # Some of the commands in the block above are not present on all OS versions - don't collect the networking file in that case
-    Remove-Item $wslNetworkLog
 }
 finally
 {
