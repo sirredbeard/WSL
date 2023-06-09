@@ -165,15 +165,13 @@ catch {}
 
 try
 {
-    $cmd = "hnsdiag.exe list all 2>&1 > " + "$folder/hnsdiag_list_all.log"
-    $cmd | cmd | Out-Null
+    & hnsdiag.exe list all 2>&1 > $folder/hnsdiag_list_all.log
 }
 catch {}
 
 try
 {
-    $cmd = "hnsdiag.exe list endpoints -df 2>&1 > " + "$folder/hnsdiag_list_endpoints.log"
-    $cmd | cmd | Out-Null
+    & hnsdiag.exe list endpoints -df 2>&1 > $folder/hnsdiag_list_endpoints.log
 }
 catch {}
 
