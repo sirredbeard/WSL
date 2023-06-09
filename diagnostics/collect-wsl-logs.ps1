@@ -210,12 +210,18 @@ try
 catch
 {
     # Some of the commands in the block above are not present on all OS versions - don't collect the networking file in that case
-    del $wslNetworkLog
+    Remove-Item $wslNetworkLog
 }
 finally
 {
-    del $stdOutLog
-    del $stdErrLog
+    if (Test-Path $stdOutLog)
+    {
+        Remove-Item $stdOutLog
+    }
+    if (Test-Path $stdErrLog)
+    {
+        Remove-Item $stdErrLog
+    }
 }
 
 $logArchive = "$(Resolve-Path $folder).zip"
