@@ -131,7 +131,7 @@ if ($Dump)
 }
 
 # Collect networking state relevant for WSL
-# Using a try/catch for some commands below, as some of them do not exist on all OS versions
+# Using a try/catch for commands below, as some of them do not exist on all OS versions
 
 try
 {
