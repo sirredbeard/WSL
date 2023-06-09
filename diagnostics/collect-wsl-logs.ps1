@@ -192,8 +192,7 @@ catch {}
 
 try
 {
-    $cmd = "vfpctrl.exe /list-vmswitch-port 2>&1 > " + "$folder/vfpctrl_list_vmswitch_port.log"
-    $cmd | cmd | Out-Null
+    & vfpctrl.exe /list-vmswitch-port 2>&1 > $folder/vfpctrl_list_vmswitch_port.log
 }
 catch {}
 
