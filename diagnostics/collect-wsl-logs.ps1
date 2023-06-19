@@ -191,13 +191,8 @@ try
 {
     foreach ($port in Get-NetFirewallHyperVPort)
     {
-        $vfpLogFile = "$networkingFolder/vfp-port-" + $port.PortName + "-get-port-state.log"
-        $cmd = "vfpctrl.exe /port " + $port.PortName + " /get-port-state 2>&1 >" + $vfpLogFile
-        $cmd | cmd | Out-Null
-
-        $vfpLogFile = "$networkingFolder/vfp-port-" + $port.PortName + "-list-rule.log"
-        $cmd = "vfpctrl.exe /port " + $port.PortName + " /list-rule 2>&1 > " + $vfpLogFile
-        $cmd | cmd | Out-Null
+		& vfpctrl.exe /port $port.PortName /get-port-state 2>&1 > "$networkingFolder/vfp-port-$($port.PortName)-get-port-state.log"
+	    & vfpctrl.exe /port $port.PortName /list-rule 2>&1 > "$networkingFolder/vfp-port-$($port.PortName)-list-rule.log"
     }
 }
 catch {}
