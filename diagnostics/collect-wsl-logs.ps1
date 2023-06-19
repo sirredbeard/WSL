@@ -133,45 +133,57 @@ if ($Dump)
 # Collect networking state relevant for WSL
 # Using a try/catch for commands below, as some of them do not exist on all OS versions
 
+Write-Host "`nCollecting additional network state..."
+
+$networkingFolder = "$folder/networking"
+mkdir -p $networkingFolder
+
+# Host networking info
 try
 {
-    Get-NetAdapter -includeHidden | select Name,ifIndex,NetLuid,InterfaceGuid,Status,MacAddress,MtuSize,InterfaceType,Hidden,HardwareInterface,ConnectorPresent,MediaType,PhysicalMediaType | Out-File -FilePath "$folder/Get-NetAdapter.log" -Append
+    Get-NetAdapter -includeHidden | select Name,ifIndex,NetLuid,InterfaceGuid,Status,MacAddress,MtuSize,InterfaceType,Hidden,HardwareInterface,ConnectorPresent,MediaType,PhysicalMediaType | Out-File -FilePath "$networkingFolder/Get-NetAdapter.log" -Append
 }
 catch {}
 
 try
 {
-    Get-NetFirewallHyperVVMCreator | Out-File -FilePath "$folder/Get-NetFirewallHyperVVMCreator.log" -Append
+    Get-NetIPConfiguration -All -Detailed | Out-File -FilePath "$networkingFolder/Get-NetIPConfiguration.log" -Append
 }
 catch {}
 
 try
 {
-    Get-NetFirewallHyperVVMSetting -PolicyStore ActiveStore | Out-File -FilePath "$folder/Get-NetFirewallHyperVVMSetting_ActiveStore.log" -Append
+    Get-NetFirewallHyperVVMCreator | Out-File -FilePath "$networkingFolder/Get-NetFirewallHyperVVMCreator.log" -Append
 }
 catch {}
 
 try
 {
-    Get-NetFirewallHyperVProfile -PolicyStore ActiveStore | Out-File -FilePath "$folder/Get-NetFirewallHyperVProfile_ActiveStore.log" -Append
+    Get-NetFirewallHyperVVMSetting -PolicyStore ActiveStore | Out-File -FilePath "$networkingFolder/Get-NetFirewallHyperVVMSetting_ActiveStore.log" -Append
 }
 catch {}
 
 try
 {
-    Get-NetFirewallHyperVPort | Out-File -FilePath "$folder/Get-NetFirewallHyperVPort.log" -Append
+    Get-NetFirewallHyperVProfile -PolicyStore ActiveStore | Out-File -FilePath "$networkingFolder/Get-NetFirewallHyperVProfile_ActiveStore.log" -Append
 }
 catch {}
 
 try
 {
-    & hnsdiag.exe list all 2>&1 > $folder/hnsdiag_list_all.log
+    Get-NetFirewallHyperVPort | Out-File -FilePath "$networkingFolder/Get-NetFirewallHyperVPort.log" -Append
 }
 catch {}
 
 try
 {
-    & hnsdiag.exe list endpoints -df 2>&1 > $folder/hnsdiag_list_endpoints.log
+    & hnsdiag.exe list all 2>&1 > $networkingFolder/hnsdiag_list_all.log
+}
+catch {}
+
+try
+{
+    & hnsdiag.exe list endpoints -df 2>&1 > $networkingFolder/hnsdiag_list_endpoints.log
 }
 catch {}
 
@@ -179,12 +191,12 @@ try
 {
     foreach ($port in Get-NetFirewallHyperVPort)
     {
-        $vfpLogFile = "$folder/vfp-port-" + $port.PortName + "-get-port-state.log"
-        $cmd = "vfpctrl.exe /port " + $port.PortName + " /get-port-state > " + $vfpLogFile
+        $vfpLogFile = "$networkingFolder/vfp-port-" + $port.PortName + "-get-port-state.log"
+        $cmd = "vfpctrl.exe /port " + $port.PortName + " /get-port-state 2>&1 >" + $vfpLogFile
         $cmd | cmd | Out-Null
 
-        $vfpLogFile = "$folder/vfp-port-" + $port.PortName + "-list-rule.log"
-        $cmd = "vfpctrl.exe /port " + $port.PortName + " /list-rule > " + $vfpLogFile
+        $vfpLogFile = "$networkingFolder/vfp-port-" + $port.PortName + "-list-rule.log"
+        $cmd = "vfpctrl.exe /port " + $port.PortName + " /list-rule 2>&1 > " + $vfpLogFile
         $cmd | cmd | Out-Null
     }
 }
@@ -192,7 +204,32 @@ catch {}
 
 try
 {
-    & vfpctrl.exe /list-vmswitch-port 2>&1 > $folder/vfpctrl_list_vmswitch_port.log
+    & vfpctrl.exe /list-vmswitch-port 2>&1 > $networkingFolder/vfpctrl_list_vmswitch_port.log
+}
+catch {}
+
+# Container networking info
+try
+{
+	wsl -e ip a s | Out-File -FilePath "$networkingFolder/wsl_ip_a_s.log" -Append
+}
+catch {}
+
+try
+{
+	wsl -e ip route show table all | Out-File -FilePath "$networkingFolder/wsl_ip_route_show_table_all.log" -Append
+}
+catch {}
+
+try
+{
+	wsl -e ip neighbor | Out-File -FilePath "$networkingFolder/wsl_ip_neighbor.log" -Append
+}
+catch {}
+
+try
+{
+	wsl -e ip link | Out-File -FilePath "$networkingFolder/wsl_ip_link.log" -Append
 }
 catch {}
 
