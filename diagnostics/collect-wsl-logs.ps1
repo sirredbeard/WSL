@@ -203,31 +203,6 @@ try
 }
 catch {}
 
-# Container networking info
-try
-{
-	wsl -e ip a s | Out-File -FilePath "$networkingFolder/wsl_ip_a_s.log" -Append
-}
-catch {}
-
-try
-{
-	wsl -e ip route show table all | Out-File -FilePath "$networkingFolder/wsl_ip_route_show_table_all.log" -Append
-}
-catch {}
-
-try
-{
-	wsl -e ip neighbor | Out-File -FilePath "$networkingFolder/wsl_ip_neighbor.log" -Append
-}
-catch {}
-
-try
-{
-	wsl -e ip link | Out-File -FilePath "$networkingFolder/wsl_ip_link.log" -Append
-}
-catch {}
-
 $logArchive = "$(Resolve-Path $folder).zip"
 Compress-Archive -Path $folder -DestinationPath $logArchive
 Remove-Item $folder -Recurse
