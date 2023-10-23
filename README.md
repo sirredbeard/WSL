@@ -61,6 +61,7 @@ Issues may be closed by the original poster at any time.  We will close issues i
 - Stack Overflow: https://stackoverflow.com/questions/tagged/wsl
 - Ask Ubuntu: https://askubuntu.com/questions/tagged/wsl
 - reddit: https://www.reddit.com/r/bashonubuntuonwindows
+- Telegram: https://wsl.community/
 - List of programs that work and don't work
     - https://github.com/ethanhs/WSL-Programs
     - https://github.com/davatron5000/can-i-subsystem-it
