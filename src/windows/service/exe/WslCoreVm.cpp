@@ -1504,38 +1504,28 @@ std::wstring WslCoreVm::GenerateConfigJson()
         vmSettings.ComputeTopology.Memory.HostingProcessNameSuffix = wsl::windows::common::wslutil::c_vmOwner;
     }
 
-    // If nested virtualization was requested, ensure the platform supports it.
+    // If nested virtualization was requested, expose the host's virtualization extensions.
     //
-    // N.B. This is done because arm64 and some older amd64 processors do not support nested virtualization.
-    //      Nested virtualization not supported on Windows 10.
+    // N.B. Local patch: Win10 gate removed AND HCS processor-feature gate removed. The HCS
+    //      c_processorCapabilitiesQuery does not surface "NestedVirt" on Win10 even on
+    //      capable hardware, so trust the user's nestedVirtualization=true. HCS will reject
+    //      VM start with a clear error on hardware that genuinely cannot do nested virt.
     if (m_vmConfig.EnableNestedVirtualization)
     {
-        try
-        {
-            if (wsl::windows::common::helpers::IsWindows11OrAbove())
-            {
-                const auto& processorFeatures = wsl::windows::common::hcs::GetProcessorFeatures();
-                auto feature = std::find(processorFeatures.begin(), processorFeatures.end(), "NestedVirt");
-                m_vmConfig.EnableNestedVirtualization = (feature != processorFeatures.end());
-            }
-            else
-            {
-                m_vmConfig.EnableNestedVirtualization = false;
-            }
-
-            vmSettings.ComputeTopology.Processor.ExposeVirtualizationExtensions = m_vmConfig.EnableNestedVirtualization;
-            if (!m_vmConfig.EnableNestedVirtualization)
-            {
-                EMIT_USER_WARNING(wsl::shared::Localization::MessageNestedVirtualizationNotSupported());
-            }
-        }
-        CATCH_LOG()
+        vmSettings.ComputeTopology.Processor.ExposeVirtualizationExtensions = true;
     }
 
 #ifdef _AMD64_
 
     // Enable hardware performance counters if they are supported.
-    if (m_vmConfig.EnableHardwarePerformanceCounters)
+    //
+    // N.B. Local patch: Win10 Hyper-V rejects partition creation (HV_STATUS_INVALID_PARAMETER,
+    //      0xC0350005) when child perfmon AND ExposeVirtualizationExtensions are both requested,
+    //      even though CPUID reports ChildPerfmonPmuSupported. Skip perfmon when nested virt is
+    //      on and the host is Win10. Bisected with tools/hcs-probe.
+    const bool nestedVirtOnWin10 =
+        m_vmConfig.EnableNestedVirtualization && !wsl::windows::common::helpers::IsWindows11OrAbove();
+    if (m_vmConfig.EnableHardwarePerformanceCounters && !nestedVirtOnWin10)
     {
         HV_X64_HYPERVISOR_HARDWARE_FEATURES hardwareFeatures{};
         __cpuid(reinterpret_cast<int*>(&hardwareFeatures), HvCpuIdFunctionMsHvHardwareFeatures);
