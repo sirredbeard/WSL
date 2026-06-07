@@ -655,6 +655,20 @@ void HandleMessageImpl(
         auto type = readField(Message.TypeIndex);
         THROW_LAST_ERROR_IF(UtilMount(source, target, type, options.MountFlags, options.StringOptions.c_str(), c_defaultRetryTimeout) < 0);
 
+        // Once kernel modules are mounted at /lib/modules/<release>, best-effort
+        // load the KVM modules so containers in this utility VM can get
+        // /dev/kvm. If the host did not set ExposeVirtualizationExtensions, the
+        // modprobe calls fail silently and we proceed without nested virt.
+        if (WI_IsFlagSet(Message.Flags, WSLC_MOUNT::KernelModules))
+        {
+            for (const auto* KvmModule : {"kvm_intel", "kvm_amd"})
+            {
+                const char* Argv[] = {"/sbin/modprobe", KvmModule, nullptr};
+                int Status = -1;
+                UtilCreateProcessAndWait("/sbin/modprobe", Argv, &Status);
+            }
+        }
+
         // Workaround for a Linux bug where virtiofs permissions aren't properly propagated when an overlay is mounted on top of a virtiofs share before the permissions have been fetched.
         // TODO: Remove once fixed upstream.
         if (wsl::shared::string::IsEqual(type, VIRTIO_FS_TYPE))

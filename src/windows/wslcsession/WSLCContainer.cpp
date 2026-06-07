@@ -1503,6 +1503,24 @@ std::unique_ptr<WSLCContainerImpl> WSLCContainerImpl::Create(
         request.HostConfig.DeviceRequests = std::vector<common::docker_schema::DeviceRequest>{{"cdi", {LX_WSLC_GPU_CDI_DEVICE}}};
     }
 
+    // Pass /dev/kvm into the container when the session was started with nested
+    // virtualization. The utility VM has /dev/kvm because HcsVirtualMachine.cpp
+    // set ExposeVirtualizationExtensions; without this passthrough the device
+    // never reaches the container's /dev namespace and qemu-kvm workloads fail
+    // with "/dev/kvm not present".
+    if (virtualMachine.FeatureEnabled(WslcFeatureFlagsNestedVirtualization))
+    {
+        if (!request.HostConfig.Devices.has_value())
+        {
+            request.HostConfig.Devices.emplace();
+        }
+        request.HostConfig.Devices->push_back({
+            "/dev/kvm",
+            "/dev/kvm",
+            "rwm",
+        });
+    }
+
     // Prepare port mappings from container options.
     std::vector<_WSLCPortMapping> ports;
     for (ULONG i = 0; i < containerOptions.PortsCount; i++)

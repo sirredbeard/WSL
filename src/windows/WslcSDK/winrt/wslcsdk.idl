@@ -18,7 +18,8 @@ namespace Microsoft.WSL.Containers
     enum SessionFeatureFlags
     {
         None = 0x00000000,
-        EnableGpu = 0x00000004
+        EnableGpu = 0x00000004,
+        EnableNestedVirtualization = 0x00000020
     };
 
     enum SessionTerminationReason
